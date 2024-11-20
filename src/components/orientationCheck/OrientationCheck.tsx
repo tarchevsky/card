@@ -1,7 +1,10 @@
 'use client';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, ReactNode} from 'react';
+import Header from "@/components/header/Header";
+import ScrollToTop from "@/components/scrollToTop/ScrollToTop";
+import Footer from "@/components/footer/Footer";
 
-export default function OrientationCheck() {
+export default function OrientationCheck({children}: { children: ReactNode }) {
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isPortrait, setIsPortrait] = useState<boolean>(false);
     const [orientation, setOrientation] = useState<string | null>(null);
@@ -49,22 +52,22 @@ export default function OrientationCheck() {
         };
     }, [isMobile]);
 
-    // Если не мобильное устройство, не рендерим компонент
-    if (!isMobile) {
-        return null;
+    // Для мобильных устройств проверяем ориентацию
+    if (isMobile && isPortrait) {
+        return (
+            <div className='h-screen flex items-center cont text-center'>
+                <div>Пожалуйста, переверните устройство горизонтально!</div>
+            </div>
+        );
     }
 
+    // Для всех остальных случаев (десктоп или мобильный в ландшафтной ориентации)
     return (
-        <div className='cont text-center'>
-            {isPortrait ? (
-                <p>
-                    Пожалуйста, переверните устройство горизонтально!
-                </p>
-            ) : (
-                <p>
-                    Отлично! Устройство в горизонтальном положении
-                </p>
-            )}
+        <div className='h-screen flex flex-col items-center justify-between'>
+            <Header/>
+            {children}
+            <ScrollToTop/>
+            <Footer/>
         </div>
     );
 }

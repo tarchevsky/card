@@ -1,31 +1,25 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Header from "@/components/header/Header";
-import Footer from "@/components/footer/Footer";
-import ScrollToTop from "@/components/scrollToTop/ScrollToTop";
-import {SITE_NAME} from "@/constants/site.constants";
-import {ReactNode} from "react";
-
-export const metadata: Metadata = {
-    title: {
-        default: SITE_NAME,
-        template: `%s | ${SITE_NAME}`,
-    },
-}
+// app/layout.tsx
+import {ReactNode} from 'react';
+import './globals.css'
+import OrientationCheck from "@/components/orientationCheck/OrientationCheck";
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
-  return (
-    <html lang="ru">
-      <body>
-        <Header />
-        {children}
-        <ScrollToTop />
-        <Footer />
-      </body>
-    </html>
-  );
+                                       children,
+                                   }: {
+    children: ReactNode;
+}) {
+    return (
+        <html lang="ru">
+        <body>
+        <OrientationCheck>
+            <div className='h-[60vh] w-[60vw]' style={{
+                background: 'rgba(255, 255, 255, 0.21)',
+                boxShadow: '14px 30px 28px -14px rgba(0, 0, 0, 0.16)'
+            }}>
+                {children}
+            </div>
+        </OrientationCheck>
+        </body>
+        </html>
+    );
 }
