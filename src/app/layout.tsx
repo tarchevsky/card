@@ -2,6 +2,7 @@
 import {ReactNode} from 'react';
 import './globals.css'
 import OrientationCheck from "@/components/orientationCheck/OrientationCheck";
+import {dance, rockstar} from "@/app/fonts";
 
 export default function RootLayout({
                                        children,
@@ -9,8 +10,8 @@ export default function RootLayout({
     children: ReactNode;
 }) {
     return (
-        <html lang="ru">
-        <body>
+        <html lang="ru" className={`${dance.variable} ${rockstar.variable}`}>
+        <body className='font-rockstar'>
         <OrientationCheck>
             <div className='h-[60vh] w-[60vw]' style={{
                 background: 'rgba(255, 255, 255, 0.21)',

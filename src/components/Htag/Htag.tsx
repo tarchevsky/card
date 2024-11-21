@@ -17,7 +17,7 @@ const Htag = memo(({ tag, children, className }: HtagProps) => {
 	}
 
 	return (
-		<Tag className={`${className ? className + ' ' : ''}mb-8`}>
+		<Tag className={`${className ? className + ' ' : ''}mb-8 font-dance`}>
 			{renderContent()}
 		</Tag>
 	)

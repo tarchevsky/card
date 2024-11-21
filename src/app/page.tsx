@@ -1,5 +1,5 @@
 import type {Metadata} from "next";
-import OrientationCheck from "@/components/orientationCheck/OrientationCheck";
+import Htag from "@/components/Htag/Htag";
 
 export const metadata: Metadata = {
     title: 'Главная',
@@ -7,6 +7,6 @@ export const metadata: Metadata = {
 
 export default function Home() {
     return (
-        <div className='cont'><h2>asdfasf</h2></div>
+        <div className='cont'><Htag tag='h1'>asdfasf</Htag></div>
     )
 }
