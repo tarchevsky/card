@@ -1,13 +1,14 @@
 'use client'
 
-import Link from 'next/link'
 import cn from 'clsx'
+import Link from 'next/link'
 import styles from './Header.module.scss'
 
 const Header = () => {
 	const menuItems = [
-		{ path: '/', label: 'Главная' },
-		{ path: '/contacts', label: 'Контакты' }
+		{ path: '/', label: 'Титульная сторона' },
+		{ path: '/about', label: 'Обо мне' },
+		{ path: '/contacts', label: 'Контакты' },
 	]
 
 	return (
@@ -18,14 +19,9 @@ const Header = () => {
 					className='menu flex justify-center gap-5 menu-horizontal'
 				>
 					{menuItems.map((item, index) => (
-						<li
-							key={index}
-							className={cn(
-								styles.item
-							)}
-						>
+						<li key={index} className={cn(styles.item)}>
 							<Link
-								className='px-[10px] btn btn-ghost font-normal'
+								className='px-[10px] btn btn-ghost font-normal text-xs'
 								href={item.path}
 							>
 								{item.label}
