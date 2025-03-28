@@ -25,6 +25,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang='ru' className={`${dance.variable} ${rockstar.variable}`}>
+			<head>
+				{/* Специальные стили для iOS Safari */}
+				<link
+					rel='stylesheet'
+					href='/ios-fixes.css'
+					media='(max-width: 844px) and (orientation: landscape) and (-webkit-min-device-pixel-ratio: 2)'
+				/>
+			</head>
 			<body className='font-rockstar'>
 				<Script src='/safari-fullscreen.js' strategy='afterInteractive' />
 				<OrientationCheck>

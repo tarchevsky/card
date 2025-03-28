@@ -18,6 +18,13 @@ export default function OrientationCheck({
 	const [isIOS, setIsIOS] = useState<boolean>(false)
 	const appContainerRef = useRef<HTMLDivElement>(null)
 
+	// Вспомогательная функция для вызова глобального метода скрытия панелей, если он доступен
+	const triggerHideBars = () => {
+		if (typeof window !== 'undefined' && (window as any).hideIOSSafariBars) {
+			;(window as any).hideIOSSafariBars()
+		}
+	}
+
 	useEffect(() => {
 		// Проверка, является ли устройство мобильным, iOS и Safari
 		const checkDevice = () => {
@@ -55,28 +62,29 @@ export default function OrientationCheck({
 
 		checkDevice()
 
-		// Для Safari на iOS добавляем обработчик прокрутки, чтобы скрыть панели браузера
-		const handleScroll = () => {
-			if (isIOS && isSafari) {
-				window.scrollTo(0, 1)
-			}
-		}
+		// Для Safari на iOS прячем верхнюю панель при разных событиях
+		if (isIOS || isSafari) {
+			// Используем глобальную функцию, если она доступна
+			triggerHideBars()
 
-		if (isIOS && isSafari) {
-			setTimeout(() => {
-				window.scrollTo(0, 1)
-			}, 500)
+			// Прячем панели при различных событиях окна
+			window.addEventListener('resize', triggerHideBars)
+			window.addEventListener('orientationchange', triggerHideBars)
+			window.addEventListener('scroll', triggerHideBars)
 
-			window.addEventListener('resize', handleScroll)
-			window.addEventListener('orientationchange', () => {
-				setTimeout(handleScroll, 500)
-			})
-		}
+			// Скрываем в разные моменты времени для большей эффективности
+			const timers = [
+				setTimeout(triggerHideBars, 500),
+				setTimeout(triggerHideBars, 1000),
+				setTimeout(triggerHideBars, 2000),
+			]
 
-		return () => {
-			if (isIOS && isSafari) {
-				window.removeEventListener('resize', handleScroll)
-				window.removeEventListener('orientationchange', handleScroll)
+			// Очистка таймеров и слушателей при размонтировании
+			return () => {
+				timers.forEach(clearTimeout)
+				window.removeEventListener('resize', triggerHideBars)
+				window.removeEventListener('orientationchange', triggerHideBars)
+				window.removeEventListener('scroll', triggerHideBars)
 			}
 		}
 	}, [isIOS, isSafari])
@@ -93,9 +101,21 @@ export default function OrientationCheck({
 					setIsFullscreen(true)
 					setShowFullscreenInfo(true)
 
-					// Скрываем панели браузера
+					// Скрываем панели браузера с серией вызовов
+					triggerHideBars()
+
+					// Серия вызовов для имитации полноэкранного режима
 					setTimeout(() => {
-						window.scrollTo(0, 1)
+						triggerHideBars()
+						if (appContainerRef.current) {
+							appContainerRef.current.style.position = 'fixed'
+							appContainerRef.current.style.top = '0'
+							appContainerRef.current.style.left = '0'
+							appContainerRef.current.style.right = '0'
+							appContainerRef.current.style.bottom = '0'
+							appContainerRef.current.style.zIndex = '9999'
+							appContainerRef.current.style.backgroundColor = '#fff'
+						}
 					}, 100)
 
 					setTimeout(() => {
@@ -166,6 +186,18 @@ export default function OrientationCheck({
 				// Для iOS/Safari просто обновляем состояние
 				if (isIOS || isSafari) {
 					setIsFullscreen(false)
+
+					// Сбрасываем стили, если они были установлены напрямую
+					if (appContainerRef.current) {
+						appContainerRef.current.style.position = ''
+						appContainerRef.current.style.top = ''
+						appContainerRef.current.style.left = ''
+						appContainerRef.current.style.right = ''
+						appContainerRef.current.style.bottom = ''
+						appContainerRef.current.style.zIndex = ''
+						appContainerRef.current.style.backgroundColor = ''
+					}
+
 					return
 				}
 
@@ -277,11 +309,11 @@ export default function OrientationCheck({
 				if (!isPortraitOrientation && !isFullscreen) {
 					requestFullscreen()
 
-					// Для Safari дополнительно вызываем scrollTo с задержкой
+					// Для Safari дополнительно скрываем панели
 					if (isSafari || isIOS) {
-						setTimeout(() => {
-							window.scrollTo(0, 1)
-						}, 300)
+						triggerHideBars()
+						setTimeout(triggerHideBars, 300)
+						setTimeout(triggerHideBars, 600)
 					}
 				} else if (isPortraitOrientation && isFullscreen) {
 					exitFullscreen()
@@ -323,7 +355,7 @@ export default function OrientationCheck({
 	// Добавляем специальный класс для iOS/Safari устройств в полноэкранном режиме
 	const fullscreenSpecialClass =
 		(isIOS || isSafari) && isFullscreen
-			? 'fixed top-0 left-0 w-full h-full z-50 bg-white'
+			? 'fixed top-0 left-0 w-full h-full z-50 bg-white overscroll-none'
 			: ''
 
 	return (
@@ -339,6 +371,10 @@ export default function OrientationCheck({
 							right: 0,
 							bottom: 0,
 							zIndex: 9999,
+							height: '100%',
+							overflowY: 'hidden',
+							WebkitOverflowScrolling: 'touch',
+							backgroundColor: '#fff',
 					  }
 					: {}
 			}
@@ -360,7 +396,13 @@ export default function OrientationCheck({
 			{/* Кнопка для входа в полноэкранный режим */}
 			{isMobile && !isPortrait && !isFullscreen && (
 				<button
-					onClick={requestFullscreen}
+					onClick={() => {
+						requestFullscreen()
+						triggerHideBars()
+						// Дополнительные попытки скрыть панели
+						setTimeout(triggerHideBars, 300)
+						setTimeout(triggerHideBars, 600)
+					}}
 					className='fixed bottom-4 right-4 flex items-center justify-center p-3 bg-gray-800 text-white rounded-full shadow-lg z-[9999] transition-transform hover:scale-110'
 					aria-label='Полноэкранный режим'
 				>
