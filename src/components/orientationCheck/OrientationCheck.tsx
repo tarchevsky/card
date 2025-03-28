@@ -14,11 +14,12 @@ export default function OrientationCheck({
 	const [orientation, setOrientation] = useState<string | null>(null)
 	const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
 	const [showFullscreenInfo, setShowFullscreenInfo] = useState<boolean>(false)
+	const [isSafari, setIsSafari] = useState<boolean>(false)
 	const [isIOS, setIsIOS] = useState<boolean>(false)
 	const appContainerRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
-		// Проверка, является ли устройство мобильным и iOS
+		// Проверка, является ли устройство мобильным, iOS и Safari
 		const checkDevice = () => {
 			const userAgent = navigator.userAgent.toLowerCase()
 			const mobileKeywords = [
@@ -35,6 +36,12 @@ export default function OrientationCheck({
 			const isIOSDevice = /iphone|ipad|ipod/.test(userAgent)
 			setIsIOS(isIOSDevice)
 
+			// Проверка на Safari
+			const isSafariBrowser =
+				/^((?!chrome|android).)*safari/i.test(userAgent) ||
+				(isIOSDevice && /crios|fxios|edgios/.test(userAgent) === false)
+			setIsSafari(isSafariBrowser)
+
 			// Исключаем планшеты
 			const isTablet =
 				/(ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|(puffin(?!.*(IP|AP|WP))))/.test(
@@ -47,7 +54,32 @@ export default function OrientationCheck({
 		}
 
 		checkDevice()
-	}, [])
+
+		// Для Safari на iOS добавляем обработчик прокрутки, чтобы скрыть панели браузера
+		const handleScroll = () => {
+			if (isIOS && isSafari) {
+				window.scrollTo(0, 1)
+			}
+		}
+
+		if (isIOS && isSafari) {
+			setTimeout(() => {
+				window.scrollTo(0, 1)
+			}, 500)
+
+			window.addEventListener('resize', handleScroll)
+			window.addEventListener('orientationchange', () => {
+				setTimeout(handleScroll, 500)
+			})
+		}
+
+		return () => {
+			if (isIOS && isSafari) {
+				window.removeEventListener('resize', handleScroll)
+				window.removeEventListener('orientationchange', handleScroll)
+			}
+		}
+	}, [isIOS, isSafari])
 
 	// Функция для запроса полноэкранного режима
 	const requestFullscreen = () => {
@@ -55,11 +87,17 @@ export default function OrientationCheck({
 
 		if (!isFullscreen) {
 			try {
-				// На iOS не используем стандартный Fullscreen API, т.к. он не поддерживается
-				if (isIOS) {
-					// Для iOS применяем альтернативный подход - просто запоминаем состояние
+				// Специальная обработка для Safari на iOS
+				if (isIOS || isSafari) {
+					// Для iOS и Safari применяем альтернативный подход
 					setIsFullscreen(true)
 					setShowFullscreenInfo(true)
+
+					// Скрываем панели браузера
+					setTimeout(() => {
+						window.scrollTo(0, 1)
+					}, 100)
+
 					setTimeout(() => {
 						setShowFullscreenInfo(false)
 					}, 5000)
@@ -68,32 +106,37 @@ export default function OrientationCheck({
 
 				// Для других устройств используем стандартный Fullscreen API
 				if (appContainerRef.current.requestFullscreen) {
-					appContainerRef.current.requestFullscreen().catch(err => {
-						console.error('Ошибка Fullscreen API:', err)
-						// Если получаем ошибку разрешений, все равно имитируем полноэкранный режим
+					try {
+						appContainerRef.current.requestFullscreen()
 						setIsFullscreen(true)
-					})
+					} catch (err) {
+						console.error('Ошибка Fullscreen API:', err)
+						setIsFullscreen(true)
+					}
 				} else if ((appContainerRef.current as any).webkitRequestFullscreen) {
-					;(appContainerRef.current as any)
-						.webkitRequestFullscreen()
-						.catch((err: any) => {
-							console.error('Ошибка Fullscreen API (webkit):', err)
-							setIsFullscreen(true)
-						})
+					try {
+						;(appContainerRef.current as any).webkitRequestFullscreen()
+						setIsFullscreen(true)
+					} catch (err) {
+						console.error('Ошибка Fullscreen API (webkit):', err)
+						setIsFullscreen(true)
+					}
 				} else if ((appContainerRef.current as any).mozRequestFullScreen) {
-					;(appContainerRef.current as any)
-						.mozRequestFullScreen()
-						.catch((err: any) => {
-							console.error('Ошибка Fullscreen API (moz):', err)
-							setIsFullscreen(true)
-						})
+					try {
+						;(appContainerRef.current as any).mozRequestFullScreen()
+						setIsFullscreen(true)
+					} catch (err) {
+						console.error('Ошибка Fullscreen API (moz):', err)
+						setIsFullscreen(true)
+					}
 				} else if ((appContainerRef.current as any).msRequestFullscreen) {
-					;(appContainerRef.current as any)
-						.msRequestFullscreen()
-						.catch((err: any) => {
-							console.error('Ошибка Fullscreen API (ms):', err)
-							setIsFullscreen(true)
-						})
+					try {
+						;(appContainerRef.current as any).msRequestFullscreen()
+						setIsFullscreen(true)
+					} catch (err) {
+						console.error('Ошибка Fullscreen API (ms):', err)
+						setIsFullscreen(true)
+					}
 				} else {
 					// Если API не поддерживается, просто имитируем полноэкранный режим
 					setIsFullscreen(true)
@@ -120,42 +163,54 @@ export default function OrientationCheck({
 	const exitFullscreen = () => {
 		if (isFullscreen) {
 			try {
-				// Для iOS просто обновляем состояние
-				if (isIOS) {
+				// Для iOS/Safari просто обновляем состояние
+				if (isIOS || isSafari) {
 					setIsFullscreen(false)
 					return
 				}
 
 				// Для других устройств используем стандартный API
 				if (document.exitFullscreen) {
-					document.exitFullscreen().catch(err => {
+					try {
+						document.exitFullscreen()
+						setIsFullscreen(false)
+					} catch (err) {
 						console.error('Ошибка при выходе из полноэкранного режима:', err)
 						setIsFullscreen(false)
-					})
+					}
 				} else if ((document as any).webkitExitFullscreen) {
-					;(document as any).webkitExitFullscreen().catch((err: any) => {
+					try {
+						;(document as any).webkitExitFullscreen()
+						setIsFullscreen(false)
+					} catch (err) {
 						console.error(
 							'Ошибка при выходе из полноэкранного режима (webkit):',
 							err
 						)
 						setIsFullscreen(false)
-					})
+					}
 				} else if ((document as any).mozCancelFullScreen) {
-					;(document as any).mozCancelFullScreen().catch((err: any) => {
+					try {
+						;(document as any).mozCancelFullScreen()
+						setIsFullscreen(false)
+					} catch (err) {
 						console.error(
 							'Ошибка при выходе из полноэкранного режима (moz):',
 							err
 						)
 						setIsFullscreen(false)
-					})
+					}
 				} else if ((document as any).msExitFullscreen) {
-					;(document as any).msExitFullscreen().catch((err: any) => {
+					try {
+						;(document as any).msExitFullscreen()
+						setIsFullscreen(false)
+					} catch (err) {
 						console.error(
 							'Ошибка при выходе из полноэкранного режима (ms):',
 							err
 						)
 						setIsFullscreen(false)
-					})
+					}
 				} else {
 					// Если API не поддерживается, просто обновляем состояние
 					setIsFullscreen(false)
@@ -171,8 +226,8 @@ export default function OrientationCheck({
 	// Слушатель события изменения полноэкранного режима
 	useEffect(() => {
 		const handleFullscreenChange = () => {
-			// Если это iOS, мы управляем состоянием вручную
-			if (isIOS) return
+			// Если это iOS/Safari, мы управляем состоянием вручную
+			if (isIOS || isSafari) return
 
 			const newFullscreenState =
 				document.fullscreenElement !== null ||
@@ -205,7 +260,7 @@ export default function OrientationCheck({
 			)
 			document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
 		}
-	}, [isIOS])
+	}, [isIOS, isSafari])
 
 	useEffect(() => {
 		if (!isMobile) return // Если не мобильное устройство, прекращаем выполнение
@@ -221,6 +276,13 @@ export default function OrientationCheck({
 				// Если ориентация горизонтальная (landscape), запрашиваем полноэкранный режим
 				if (!isPortraitOrientation && !isFullscreen) {
 					requestFullscreen()
+
+					// Для Safari дополнительно вызываем scrollTo с задержкой
+					if (isSafari || isIOS) {
+						setTimeout(() => {
+							window.scrollTo(0, 1)
+						}, 300)
+					}
 				} else if (isPortraitOrientation && isFullscreen) {
 					exitFullscreen()
 				}
@@ -247,7 +309,7 @@ export default function OrientationCheck({
 				exitFullscreen()
 			}
 		}
-	}, [isMobile, isFullscreen])
+	}, [isMobile, isFullscreen, isSafari, isIOS])
 
 	// Для мобильных устройств проверяем ориентацию
 	if (isMobile && isPortrait) {
@@ -258,17 +320,28 @@ export default function OrientationCheck({
 		)
 	}
 
-	// Добавляем специальный класс для iOS устройств в полноэкранном режиме
-	const fullscreenIOSClass =
-		isIOS && isFullscreen
+	// Добавляем специальный класс для iOS/Safari устройств в полноэкранном режиме
+	const fullscreenSpecialClass =
+		(isIOS || isSafari) && isFullscreen
 			? 'fixed top-0 left-0 w-full h-full z-50 bg-white'
 			: ''
 
-	// Для всех остальных случаев (десктоп или мобильный в ландшафтной ориентации)
 	return (
 		<div
 			ref={appContainerRef}
-			className={`h-screen flex flex-col items-center justify-between ${fullscreenIOSClass}`}
+			className={`h-screen flex flex-col items-center justify-between ${fullscreenSpecialClass}`}
+			style={
+				isFullscreen && (isIOS || isSafari)
+					? {
+							position: 'fixed',
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							zIndex: 9999,
+					  }
+					: {}
+			}
 		>
 			<Header />
 			{children}
@@ -277,9 +350,9 @@ export default function OrientationCheck({
 
 			{/* Инструкции по выходу из полноэкранного режима */}
 			{showFullscreenInfo && (
-				<div className='fixed top-4 left-0 right-0 mx-auto w-max px-4 py-2 bg-gray-800 bg-opacity-80 text-white rounded-lg shadow-lg z-50 text-sm transition-opacity duration-300'>
-					{isIOS
-						? 'Приложение работает в режиме полного экрана. Нажмите на кнопку "Готово" или "Назад" для выхода.'
+				<div className='fixed top-4 left-0 right-0 mx-auto w-max px-4 py-2 bg-gray-800 bg-opacity-80 text-white rounded-lg shadow-lg z-[9999] text-sm transition-opacity duration-300'>
+					{isIOS || isSafari
+						? 'Приложение работает в режиме полного экрана. Нажмите на кнопку выхода в правом верхнем углу.'
 						: 'Для выхода из полноэкранного режима: свайп вниз или нажмите кнопку "Назад"'}
 				</div>
 			)}
@@ -288,7 +361,7 @@ export default function OrientationCheck({
 			{isMobile && !isPortrait && !isFullscreen && (
 				<button
 					onClick={requestFullscreen}
-					className='fixed bottom-4 right-4 flex items-center justify-center p-3 bg-gray-800 text-white rounded-full shadow-lg z-50 transition-transform hover:scale-110'
+					className='fixed bottom-4 right-4 flex items-center justify-center p-3 bg-gray-800 text-white rounded-full shadow-lg z-[9999] transition-transform hover:scale-110'
 					aria-label='Полноэкранный режим'
 				>
 					<svg
@@ -310,11 +383,11 @@ export default function OrientationCheck({
 				</button>
 			)}
 
-			{/* Кнопка для выхода из полноэкранного режима (только для iOS) */}
-			{isIOS && isFullscreen && (
+			{/* Кнопка для выхода из полноэкранного режима (для iOS/Safari) */}
+			{(isIOS || isSafari) && isFullscreen && (
 				<button
 					onClick={exitFullscreen}
-					className='fixed top-4 right-4 flex items-center justify-center p-2 bg-gray-800 text-white rounded-lg shadow-lg z-[60] text-sm'
+					className='fixed top-4 right-4 flex items-center justify-center p-2 bg-gray-800 text-white rounded-lg shadow-lg z-[9999] text-sm'
 				>
 					Выйти из полноэкранного режима
 				</button>
