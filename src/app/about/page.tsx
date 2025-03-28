@@ -8,10 +8,13 @@ export const metadata: Metadata = {
 export default function AboutPage() {
 	return (
 		<div className='cont'>
-			<Htag tag='h1' className='md:mt-12 text-3xl md:text-7xl'>
+			<Htag
+				tag='h1'
+				className='text-3xl md:text-5xl md:mt-8 lg:text-7xl lg:mt-12'
+			>
 				Обо мне
 			</Htag>
-			<div className='prose'>
+			<div className='prose md:text-[10px] lg:text-base'>
 				<p>
 					Lorem, ipsum dolor sit amet consectetur adipisicing elit. Maxime
 					reiciendis facilis impedit nemo amet, autem enim nisi odit, distinctio
